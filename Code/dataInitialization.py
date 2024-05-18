@@ -5,7 +5,7 @@ from inspyred.benchmarks import Benchmark
 from inspyred import ec
 import itertools
 import math
-import random
+from random import Random
 
 import networkx as nx
 from matplotlib import *
@@ -120,6 +120,19 @@ class CalendarColoring(Benchmark):
         self.weights = weights
         self.nodes = nodes # For championships and neighbourhood retrieval for coloring
         self.slots = available_slots
+        # For each node: number of neighbours
+        # if max number of neighbours+1 > predecessor
+        # check if max number of neighbours+1 > len slot -> value Error, no coloring possible
+        max_neighbours = 1
+        for i in range(len(self.nodes)):
+            num_neighbour = len(self.get_neighbours(i)) + 1
+            if num_neighbour > max_neighbours:
+                if num_neighbour > len(self.slots):
+                    raise ValueError("Number of color too small to generate a valid solution")
+                else:
+                    max_neighbours = num_neighbour
+                    if max_neighbours == len(self.slots):
+                        break
         self.num_championship = num_championship
         self.championships=[]
         if self.num_championship==1:
@@ -169,31 +182,32 @@ class CalendarColoring(Benchmark):
         while None in candidate:
             feasible_components = []
             if candidate.count(None)==len(candidate):
-                feasible_components = self.components
+                feasible_components = [c for c in range(len(candidate))]
             else:
-                # cerca tutti i vicini non visitati e aggiungi i nodi con None anche se non connessi? Alla fine devo avere colori diversi per ogni nodo
-                # non serve avere un path in questo grafo (come calcolo la fitness però?)
-                # already visited nodes. save only the index
                 already_visited = [c for c in range(len(candidate)) if candidate[c] is not None] # (servono?)
                 feasible_components = [c for c in range(len(candidate)) if candidate[c] is None]
+            
             if len(feasible_components) == 0:
                 candidate = [None] * len(self.weights)
-            elif len(feasible_components == 1):
+            elif len(feasible_components) == 1:
                 # get neighbours of last component
                 neighbours_indexs = self.get_neighbours(feasible_components[0])
-                neighbours_slots = []
-                for i in neighbours_indexs:
-                    if candidate[i] is not None:
-                        neighbours_slots.append(candidate[i])
+                neighbours_slots = [None]*len(neighbours_indexs)
+                for i in range(len(neighbours_indexs)):
+                    if candidate[neighbours_indexs[i]] is not None:
+                        neighbours_slots[i]=candidate[neighbours_indexs[i]]
                 # get available slots
                 available_slots = []
                 for slot in self.slots:
                     if slot not in neighbours_slots:
                         usable_slot = True
-                        for n_slot in neighbours_slots:
+                        for n_slot_index in range(len(neighbours_slots)):
+                            if neighbours_slots[n_slot_index] is None:
+                                continue
+                            n_slot = self.slots[neighbours_slots[n_slot_index]]
                             same_champ = False
                             for championship in self.championships:
-                                if slot in championship and n_slot in championship:
+                                if self.nodes[feasible_components[0]] in championship and self.nodes[neighbours_indexs[n_slot_index]] in championship:
                                     same_champ = True
                             # cambiare controllo per includere il discorso dei campionati differenti
                             # ciclo sui campionati. Se entrambi appartengono allo stesso campionato +6, altrimenti, se non appartengono allo stesso, +1
@@ -204,12 +218,71 @@ class CalendarColoring(Benchmark):
                                 if(abs((n_slot.date-slot.date).days) < 1):
                                     usable_slot = False
                         if usable_slot == True:
-                            available_slots.append(slot)
-                # select slot between the ones available (condition of 1 or 6 days)
-                
+                            available_slots.append(self.slots.index(slot))
+                # select first slot between the ones available
+                if len(available_slots) == 0:
+                    # Since we already checked if there are enough slots for the maximum number of nodes interconnected, if we have
+                    # no available slot it means we choose a wrong coloring and we can try another solution
+                    for i in self.get_neighbours(feasible_components[0]):
+                        candidate[i] = None
+                    print("Solution resetted for bad coloring")
+                else: 
+                    if random.random() <= self.bias:
+                        candidate[feasible_components[0]] = available_slots[0]
+                    else:
+                        random_index = random.randint(0,len(available_slots)-1)
+                        candidate[feasible_components[0]] = available_slots[random_index]
                 # assign slot to node index (feasible_components[0])
-                pass
-
+            else:
+                # Select a feasible component
+                if random.random() <= self.bias:
+                    # select the first feasible component
+                    random_f_c_index = 0
+                else:
+                    # random index for feasible componen ts
+                    random_f_c_index = random.randint(0,len(feasible_components)-1)
+                self.current_index = random_f_c_index
+                # get neighbours of the selected node
+                neighbours_indexs = self.get_neighbours(feasible_components[self.current_index])
+                neighbours_slots = [None]*len(neighbours_indexs)
+                for i in range(len(neighbours_indexs)):
+                    if candidate[neighbours_indexs[i]] is not None:
+                        neighbours_slots[i]=candidate[neighbours_indexs[i]]
+                # get available slots
+                available_slots = []
+                for slot in self.slots:
+                    if slot not in neighbours_slots:
+                        usable_slot = True
+                        for n_slot_index in range(len(neighbours_slots)):
+                            if neighbours_slots[n_slot_index] is None:
+                                continue
+                            n_slot = self.slots[neighbours_slots[n_slot_index]]
+                            same_champ = False
+                            # NO DOVREBBE ESSERE CON LA PARTITA
+                            for championship in self.championships:
+                                if self.nodes[feasible_components[self.current_index]] in championship and self.nodes[neighbours_indexs[n_slot_index]] in championship:
+                                    same_champ = True
+                            if same_champ:
+                                if(abs((n_slot.date-slot.date).days) < 6):
+                                    usable_slot = False
+                            else:
+                                if(abs((n_slot.date-slot.date).days) < 1):
+                                    usable_slot = False
+                        if usable_slot == True:
+                            available_slots.append(self.slots.index(slot))
+                # select first slot between the ones available
+                if len(available_slots) == 0:
+                    # Since we already checked if there are enough slots for the maximum number of nodes interconnected, if we have
+                    # no available slot it means we choose a wrong coloring and we can try another solution
+                    for i in self.get_neighbours(feasible_components[self.current_index]):
+                        candidate[i] = None
+                    print("Solution resetted for bad coloring")
+                else: 
+                    if random.random() <= self.bias:
+                        candidate[feasible_components[random_f_c_index]] = available_slots[0]
+                    else:
+                        random_index = random.randint(0,len(available_slots)-1)
+                        candidate[feasible_components[random_f_c_index]] = available_slots[random_index]
         return candidate
 
     def get_neighbours(self, index):
@@ -219,7 +292,7 @@ class CalendarColoring(Benchmark):
                 neighbours.append(i)
         return neighbours
 
-file_index = 0
+file_index = 1
 
 if(file_index==0):
     graph_file="./Data/OneTeamGraph.csv"
@@ -256,4 +329,12 @@ print(ground_truth)
 
 instance = CalendarColoring(adjmat, nodes, available_slots)#, num_championship=2, champ_size=[14,56])
 #print(nodes)
-print(instance.championships)      
+print(instance.championships)  
+solution = instance.constructor(Random(), [])
+sol_string = "["
+for i in range(len(solution)):
+    sol_string = sol_string + nodes[i] + ": " + str(available_slots[solution[i]])
+    if(i!=len(solution)-1):
+        sol_string = sol_string + ", "
+sol_string = sol_string + "]"
+print(sol_string)
