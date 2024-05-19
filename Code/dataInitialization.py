@@ -206,9 +206,12 @@ class CalendarColoring(Benchmark):
                                 continue
                             n_slot = self.slots[neighbours_slots[n_slot_index]]
                             same_champ = False
-                            for championship in self.championships:
-                                if self.nodes[feasible_components[0]] in championship and self.nodes[neighbours_indexs[n_slot_index]] in championship:
-                                    same_champ = True
+                            if len(self.championships)>1:
+                                for championship in self.championships:
+                                    if self.nodes[feasible_components[0]] in championship and self.nodes[neighbours_indexs[n_slot_index]] in championship:
+                                        same_champ = True
+                            else:
+                                same_champ = True
                             # cambiare controllo per includere il discorso dei campionati differenti
                             # ciclo sui campionati. Se entrambi appartengono allo stesso campionato +6, altrimenti, se non appartengono allo stesso, +1
                             if same_champ:
@@ -227,11 +230,13 @@ class CalendarColoring(Benchmark):
                         candidate[i] = None
                     print("Solution resetted for bad coloring")
                 else: 
-                    if random.random() <= self.bias:
+                    candidate[feasible_components[0]] = available_slots[0]
+                    '''if random.random() <= self.bias:
                         candidate[feasible_components[0]] = available_slots[0]
                     else:
                         random_index = random.randint(0,len(available_slots)-1)
                         candidate[feasible_components[0]] = available_slots[random_index]
+                    '''
                 # assign slot to node index (feasible_components[0])
             else:
                 # Select a feasible component
@@ -258,10 +263,12 @@ class CalendarColoring(Benchmark):
                                 continue
                             n_slot = self.slots[neighbours_slots[n_slot_index]]
                             same_champ = False
-                            # NO DOVREBBE ESSERE CON LA PARTITA
-                            for championship in self.championships:
-                                if self.nodes[feasible_components[self.current_index]] in championship and self.nodes[neighbours_indexs[n_slot_index]] in championship:
-                                    same_champ = True
+                            if len(self.championships)>1:
+                                for championship in self.chamionships:
+                                    if self.nodes[feasible_components[self.current_index]] in championship and self.nodes[neighbours_indexs[n_slot_index]] in championship:
+                                        same_champ = True
+                            else:
+                                same_champ = True
                             if same_champ:
                                 if(abs((n_slot.date-slot.date).days) < 6):
                                     usable_slot = False
@@ -277,13 +284,24 @@ class CalendarColoring(Benchmark):
                     for i in self.get_neighbours(feasible_components[self.current_index]):
                         candidate[i] = None
                     print("Solution resetted for bad coloring")
-                else: 
+                else:
+                    candidate[feasible_components[random_f_c_index]] = available_slots[0]
+                    '''
                     if random.random() <= self.bias:
                         candidate[feasible_components[random_f_c_index]] = available_slots[0]
                     else:
                         random_index = random.randint(0,len(available_slots)-1)
                         candidate[feasible_components[random_f_c_index]] = available_slots[random_index]
+                    '''
         return candidate
+
+    def evaluator(self, candidates, args):
+        """Return the fitness values for the given candidates."""
+        fitness = []
+        for candidate in candidates:
+            different_slots = set(candidate)
+            fitness.append(len(different_slots))
+        return fitness
 
     def get_neighbours(self, index):
         neighbours = []
@@ -292,7 +310,7 @@ class CalendarColoring(Benchmark):
                 neighbours.append(i)
         return neighbours
 
-file_index = 1
+file_index = 0
 
 if(file_index==0):
     graph_file="./Data/OneTeamGraph.csv"
@@ -333,8 +351,13 @@ print(instance.championships)
 solution = instance.constructor(Random(), [])
 sol_string = "["
 for i in range(len(solution)):
-    sol_string = sol_string + nodes[i] + ": " + str(available_slots[solution[i]])
+    if solution[i] is None:
+        sol_string = sol_string + nodes[i] + ": None"
+    else:
+        sol_string = sol_string + nodes[i] + ": " + str(available_slots[solution[i]])
     if(i!=len(solution)-1):
         sol_string = sol_string + ", "
 sol_string = sol_string + "]"
 print(sol_string)
+
+print(instance.evaluator([solution], []))
