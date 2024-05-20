@@ -169,7 +169,7 @@ class CalendarColoring(Benchmark):
             else: 
                 raise ValueError("The number of matches doesn't match the one of the championships")            
         # E se cambiassimo i trail components? 1 se non adiacenti, 0 se adiacenti
-        self.components = [swarm.TrailComponent((i, j), value=(1 / weights[i][j]) if weights[i][j]!=0 else 0) for i, j in itertools.permutations(range(len(weights)), 2)]
+        self.components = [swarm.TrailComponent((i, j), value=1 if weights[i][j]!=0 else 0) for i, j in itertools.permutations(range(len(weights)), 2)]
         self.bias = 0.5
         self.bounder = ec.DiscreteBounder([i for i in range(len(weights))])
         self.maximize = True
@@ -230,13 +230,12 @@ class CalendarColoring(Benchmark):
                         candidate[i] = None
                     print("Solution resetted for bad coloring")
                 else: 
-                    candidate[feasible_components[0]] = available_slots[0]
-                    '''if random.random() <= self.bias:
+                    #candidate[feasible_components[0]] = available_slots[0]
+                    if random.random() <= self.bias:
                         candidate[feasible_components[0]] = available_slots[0]
                     else:
                         random_index = random.randint(0,len(available_slots)-1)
                         candidate[feasible_components[0]] = available_slots[random_index]
-                    '''
                 # assign slot to node index (feasible_components[0])
             else:
                 # Select a feasible component
@@ -270,8 +269,10 @@ class CalendarColoring(Benchmark):
                             else:
                                 same_champ = True
                             if same_champ:
-                                if(abs((n_slot.date-slot.date).days) < 6):
-                                    usable_slot = False
+                                if self.weights[feasible_components[self.current_index]][neighbours_indexs[n_slot_index]] == 1:
+                                    # ADD CHECK FOR SAME GYM MATCH THAT ARE NOT OF THE SAME TEAM (example: Virtus Rosso, Virtus Blu and Virtus Bianco)
+                                    if(abs((n_slot.date-slot.date).days) < 6):
+                                        usable_slot = False
                             else:
                                 if(abs((n_slot.date-slot.date).days) < 1):
                                     usable_slot = False
@@ -285,14 +286,12 @@ class CalendarColoring(Benchmark):
                         candidate[i] = None
                     print("Solution resetted for bad coloring")
                 else:
-                    candidate[feasible_components[random_f_c_index]] = available_slots[0]
-                    '''
+                    #candidate[feasible_components[random_f_c_index]] = available_slots[0]
                     if random.random() <= self.bias:
                         candidate[feasible_components[random_f_c_index]] = available_slots[0]
                     else:
                         random_index = random.randint(0,len(available_slots)-1)
                         candidate[feasible_components[random_f_c_index]] = available_slots[random_index]
-                    '''
         return candidate
 
     def evaluator(self, candidates, args):
@@ -310,7 +309,7 @@ class CalendarColoring(Benchmark):
                 neighbours.append(i)
         return neighbours
 
-file_index = 0
+file_index = 1
 
 if(file_index==0):
     graph_file="./Data/OneTeamGraph.csv"
