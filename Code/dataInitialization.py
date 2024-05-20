@@ -215,11 +215,13 @@ class CalendarColoring(Benchmark):
                             # cambiare controllo per includere il discorso dei campionati differenti
                             # ciclo sui campionati. Se entrambi appartengono allo stesso campionato +6, altrimenti, se non appartengono allo stesso, +1
                             if same_champ:
-                                if(abs((n_slot.date-slot.date).days) < 6):
-                                    usable_slot = False
+                                if self.weights[feasible_components[self.current_index]][neighbours_indexs[n_slot_index]] == 1:
+                                    if(abs((n_slot.date-slot.date).days) < 6):
+                                        usable_slot = False
                             else:
-                                if(abs((n_slot.date-slot.date).days) < 1):
-                                    usable_slot = False
+                                if self.weights[feasible_components[self.current_index]][neighbours_indexs[n_slot_index]] == 1:
+                                    if(abs((n_slot.date-slot.date).days) < 1):
+                                        usable_slot = False
                         if usable_slot == True:
                             available_slots.append(self.slots.index(slot))
                 # select first slot between the ones available
@@ -263,7 +265,7 @@ class CalendarColoring(Benchmark):
                             n_slot = self.slots[neighbours_slots[n_slot_index]]
                             same_champ = False
                             if len(self.championships)>1:
-                                for championship in self.chamionships:
+                                for championship in self.championships:
                                     if self.nodes[feasible_components[self.current_index]] in championship and self.nodes[neighbours_indexs[n_slot_index]] in championship:
                                         same_champ = True
                             else:
@@ -274,8 +276,9 @@ class CalendarColoring(Benchmark):
                                     if(abs((n_slot.date-slot.date).days) < 6):
                                         usable_slot = False
                             else:
-                                if(abs((n_slot.date-slot.date).days) < 1):
-                                    usable_slot = False
+                                if self.weights[feasible_components[self.current_index]][neighbours_indexs[n_slot_index]] == 1:
+                                    if(abs((n_slot.date-slot.date).days) < 1):
+                                        usable_slot = False
                         if usable_slot == True:
                             available_slots.append(self.slots.index(slot))
                 # select first slot between the ones available
@@ -305,7 +308,7 @@ class CalendarColoring(Benchmark):
     def get_neighbours(self, index):
         neighbours = []
         for i in range(len(self.weights)):
-            if self.weights[index][i] == 1:
+            if self.weights[index][i] != 0:
                 neighbours.append(i)
         return neighbours
 
@@ -344,7 +347,10 @@ print(av_slots_str)
 ground_truth = getGroundTruth(gt_file, nodes, available_slots)
 print(ground_truth)
 
-instance = CalendarColoring(adjmat, nodes, available_slots)#, num_championship=2, champ_size=[14,56])
+if file_index == 2:
+    instance = CalendarColoring(adjmat, nodes, available_slots, num_championship=2, champ_size=[14,56])
+else: 
+    instance = CalendarColoring(adjmat, nodes, available_slots)
 #print(nodes)
 print(instance.championships)  
 solution = instance.constructor(Random(), [])
