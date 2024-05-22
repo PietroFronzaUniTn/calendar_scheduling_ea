@@ -46,7 +46,6 @@ else:
 ac = inspyred.swarm.ACS(prng, problem.components)
 #ac.observer = [plot_observer]
 ac.archiver = coloring_archive
-ac.terminator = inspyred.ec.terminators.generation_termination
 final_pop = ac.evolve(generator=problem.constructor, 
                       evaluator=problem.evaluator, 
                       bounder=problem.bounder,
@@ -58,6 +57,27 @@ final_pop = ac.evolve(generator=problem.constructor,
 print(ac.archive)
 best_ACS = min(ac.archive)
 
+for i in range(len(nodes)):
+    node_slot = available_slots[best_ACS.candidate[i]]
+    neighbours_indexs = problem.get_neighbours(i)
+    for j in range(len(neighbours_indexs)):
+        neighbour_slot = available_slots[best_ACS.candidate[neighbours_indexs[j]]]
+        same_champ = False
+        if len(problem.championships)>1:
+            for championship in problem.championships:
+                if nodes[i] in championship and nodes[neighbours_indexs[j]] in championship:
+                    same_champ = True
+        else:
+            same_champ = True
+        if same_champ:
+            if problem.weights[i][neighbours_indexs[j]] == 1:
+                if(abs((neighbour_slot.date-available_slots[best_ACS.candidate[i]].date).days) < 6):
+                    print("Node: ",nodes[i],"neighbour",nodes[neighbours_indexs[j]],"Is ",neighbour_slot.date,"6 days in advance w.r.t. ", available_slots[best_ACS.candidate[i]].date)
+                    print("CONFLICT IN SAME CHAMPIONSHIP")
+        else:
+            if problem.weights[i][neighbours_indexs[j]] == 1:
+                if(abs((neighbour_slot.date-available_slots[best_ACS.candidate[i]].date).days) < 1):
+                    usable_slot = False
 sol_string = "["
 for i in range(len(best_ACS.candidate)):
     if best_ACS.candidate[i] is None:

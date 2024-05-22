@@ -193,7 +193,32 @@ class CalendarColoring(Benchmark):
         fitness = []
         for candidate in candidates:
             different_slots = set(candidate)
-            fitness.append(len(different_slots))
+            conflict = False
+            for i in range(len(candidate)):
+                neighbours_indexs = self.get_neighbours(i)
+                for j in range(len(neighbours_indexs)):
+                    neighbour_slot = self.slots[candidate[neighbours_indexs[j]]]
+                same_champ = False
+                if len(self.championships)>1:
+                    for championship in self.championships:
+                        if self.nodes[i] in championship and self.nodes[neighbours_indexs[j]] in championship:
+                            same_champ = True
+                else:
+                    same_champ = True
+                if same_champ:
+                    if self.weights[i][neighbours_indexs[j]] == 1:
+                        if(abs((neighbour_slot.date-self.slots[candidate[i]].date).days) < 6):
+                            conflict = True
+                            break
+                else:
+                    if self.weights[i][neighbours_indexs[j]] == 1:
+                        if(abs((neighbour_slot.date-self.slots[candidate[i]].date).days) < 1):
+                            conflict = True
+                            break
+            if conflict:
+                fitness.append(len(candidate)+1)
+            else:
+                fitness.append(len(different_slots))
         return fitness
 
     def get_neighbours(self, index):
