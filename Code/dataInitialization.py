@@ -163,5 +163,6 @@ if __name__ == "__main__":
             sol_string = sol_string + ", "
     sol_string = sol_string + "]"
     print(sol_string)
-
+    print(solution)
+    print(max(solution))
     print(instance.evaluator([solution], []))

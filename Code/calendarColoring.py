@@ -60,10 +60,10 @@ class CalendarColoring(Benchmark):
             else: 
                 raise ValueError("The number of matches doesn't match the one of the championships")            
         # E se cambiassimo i trail components? 1 se non adiacenti, 0 se adiacenti
-        self.components = [swarm.TrailComponent((i, j), value=1 if weights[i][j]!=0 else 0) for i, j in itertools.permutations(range(len(weights)), 2)]
+        self.components = [swarm.TrailComponent((i, j), value=0 if weights[i][j]!=0 else 1) for i, j in itertools.permutations(range(len(weights)), 2)]
         self.bias = 0.5
         self.bounder = ec.DiscreteBounder([i for i in range(len(weights))])
-        self.maximize = True
+        self.maximize = False
         self._use_ants = False
 
     def constructor(self, random, args):
@@ -106,11 +106,11 @@ class CalendarColoring(Benchmark):
                             # cambiare controllo per includere il discorso dei campionati differenti
                             # ciclo sui campionati. Se entrambi appartengono allo stesso campionato +6, altrimenti, se non appartengono allo stesso, +1
                             if same_champ:
-                                if self.weights[feasible_components[self.current_index]][neighbours_indexs[n_slot_index]] == 1:
+                                if self.weights[feasible_components[0]][neighbours_indexs[n_slot_index]] == 1:
                                     if(abs((n_slot.date-slot.date).days) < 6):
                                         usable_slot = False
                             else:
-                                if self.weights[feasible_components[self.current_index]][neighbours_indexs[n_slot_index]] == 1:
+                                if self.weights[feasible_components[0]][neighbours_indexs[n_slot_index]] == 1:
                                     if(abs((n_slot.date-slot.date).days) < 1):
                                         usable_slot = False
                         if usable_slot == True:
@@ -121,7 +121,7 @@ class CalendarColoring(Benchmark):
                     # no available slot it means we choose a wrong coloring and we can try another solution
                     for i in self.get_neighbours(feasible_components[0]):
                         candidate[i] = None
-                    print("Solution resetted for bad coloring")
+                    #print("Solution resetted for bad coloring")
                 else: 
                     #candidate[feasible_components[0]] = available_slots[0]
                     if random.random() <= self.bias:
@@ -178,7 +178,7 @@ class CalendarColoring(Benchmark):
                     # no available slot it means we choose a wrong coloring and we can try another solution
                     for i in self.get_neighbours(feasible_components[self.current_index]):
                         candidate[i] = None
-                    print("Solution resetted for bad coloring")
+                    #print("Solution resetted for bad coloring")
                 else:
                     #candidate[feasible_components[random_f_c_index]] = available_slots[0]
                     if random.random() <= self.bias:
@@ -202,3 +202,25 @@ class CalendarColoring(Benchmark):
             if self.weights[index][i] != 0:
                 neighbours.append(i)
         return neighbours
+
+def coloring_archive(random, population, archive, args):
+    new_archive = archive
+    for individual in population:
+        if len(new_archive) == 0:
+            new_archive.append(individual)
+        else:
+            should_remove = []
+            should_add = True
+            for arc_entry in new_archive:
+                if individual.candidate == arc_entry.candidate:
+                    should_add = False
+                    break
+                elif individual.fitness < arc_entry.fitness:
+                    should_remove.append(arc_entry)
+                elif individual.fitness > arc_entry.fitness:
+                    should_add = False
+            for remove_entry in should_remove:
+                new_archive.remove(remove_entry)
+            if should_add:
+                new_archive.append(individual)
+    return new_archive
