@@ -1,5 +1,7 @@
 from dataInitialization import *
 from calendarColoring import *
+from plot_utils import plot_observer
+import matplotlib.pyplot as plt
 import inspyred
 
 import collections
@@ -22,10 +24,10 @@ else:
     gt_file="./Data/TwoChampionshipOneTeamGT.csv"
 
 # common parameters
-pop_size = 10
+pop_size = 50
 max_generations = 10
-seed = 0
-prng = Random(seed)
+seed = 1
+prng = Random()
 display = True
 # ACS specific parameters
 evaporation_rate = 0.1
@@ -44,7 +46,8 @@ if file_index == 2:
 else:
     problem = CalendarColoring(adjmat, nodes, available_slots)
 ac = inspyred.swarm.ACS(prng, problem.components)
-#ac.observer = [plot_observer]
+ac.terminator = ec.terminators.generation_termination
+ac.observer = [plot_observer]
 ac.archiver = coloring_archive
 final_pop = ac.evolve(generator=problem.constructor, 
                       evaluator=problem.evaluator, 
@@ -77,7 +80,8 @@ for i in range(len(nodes)):
         else:
             if problem.weights[i][neighbours_indexs[j]] == 1:
                 if(abs((neighbour_slot.date-available_slots[best_ACS.candidate[i]].date).days) < 1):
-                    usable_slot = False
+                    print("Node: ",nodes[i],"neighbour",nodes[neighbours_indexs[j]],"Is ",neighbour_slot.date,"1 days in advance w.r.t. ", available_slots[best_ACS.candidate[i]].date)
+                    print("CONFLICT IN SAME CHAMPIONSHIP")
 sol_string = "["
 for i in range(len(best_ACS.candidate)):
     if best_ACS.candidate[i] is None:
@@ -88,3 +92,6 @@ for i in range(len(best_ACS.candidate)):
         sol_string = sol_string + ", "
 sol_string = sol_string + "]"
 print(sol_string)
+
+ioff()
+plt.show()
