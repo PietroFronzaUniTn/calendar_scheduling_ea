@@ -1,3 +1,4 @@
+import time
 from dataInitialization import *
 from calendarColoring import *
 from plot_utils import plot_observer
@@ -8,7 +9,7 @@ import collections
 collections.Iterable = collections.abc.Iterable
 collections.Sequence = collections.abc.Sequence
 
-file_index = 1
+file_index = 3
 
 if(file_index==0):
     graph_file="./Data/OneTeamGraph.csv"
@@ -18,16 +19,20 @@ elif(file_index==1):
     graph_file="./Data/OneChampionshipGraph.csv"
     slots_file="./Data/OneChampionshipSlots.csv"
     gt_file="./Data/OneChampionshipGT.csv"
-else:
+elif(file_index==2):
     graph_file="./Data/TwoChampionshipOneTeamGraph.csv"
     slots_file="./Data/TwoChampionshipOneTeamSlots.csv"
     gt_file="./Data/TwoChampionshipOneTeamGT.csv"
+else:
+    graph_file="./Data/TwoChampionshipGraph.csv"
+    slots_file="./Data/TwoChampionshipSlots.csv"
+    gt_file="./Data/TwoChampionshipGT.csv"
 
 # common parameters
 pop_size = 50
-max_generations = 10
-seed = 1
-prng = Random()
+max_generations = 50
+seed = 100
+prng = Random(seed)
 display = True
 # ACS specific parameters
 evaporation_rate = 0.1
@@ -43,12 +48,15 @@ ground_truth = getGroundTruth(gt_file, nodes, available_slots)
 # run ACS
 if file_index == 2:
     problem = CalendarColoring(adjmat, nodes, available_slots, num_championship=2, champ_size=[14,56])
+elif file_index == 3:
+    problem = CalendarColoring(adjmat, nodes, available_slots, num_championship=2, champ_size=[54,56])
 else:
     problem = CalendarColoring(adjmat, nodes, available_slots)
 ac = inspyred.swarm.ACS(prng, problem.components)
 ac.terminator = ec.terminators.generation_termination
 ac.observer = [plot_observer]
 ac.archiver = coloring_archive
+start_time = time.time()
 final_pop = ac.evolve(generator=problem.constructor, 
                       evaluator=problem.evaluator, 
                       bounder=problem.bounder,
@@ -57,7 +65,9 @@ final_pop = ac.evolve(generator=problem.constructor,
                       max_generations=max_generations,
                       evaporation_rate=evaporation_rate,
                       learning_rate=learning_rate,**args)
-print(ac.archive)
+execution_time = (time.time() - start_time)
+print("Execution time: ",execution_time)
+#print(ac.archive)
 best_ACS = min(ac.archive)
 
 for i in range(len(nodes)):
