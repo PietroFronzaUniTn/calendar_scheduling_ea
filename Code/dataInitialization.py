@@ -1,6 +1,7 @@
 import os
 import math
 from random import Random
+import pandas as pd
 
 import networkx as nx
 from matplotlib import *
@@ -10,6 +11,7 @@ import datetime
 from matplotlib import collections  as mc
 
 from calendarColoring import CalendarColoring
+from plot_utils import plot_solution
 
 def getGraphNodesAndAdjacencyMatrix(file):
     with open(file) as f:
@@ -166,3 +168,6 @@ if __name__ == "__main__":
     print(solution)
     print(max(solution))
     print(instance.evaluator([solution], []))
+
+    
+    plot_solution(solution, nodes, available_slots)

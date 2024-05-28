@@ -1,7 +1,7 @@
 import time
 from dataInitialization import *
 from calendarColoring import *
-from plot_utils import plot_observer
+from plot_utils import plot_observer, plot_solution
 import matplotlib.pyplot as plt
 import inspyred
 
@@ -105,3 +105,4 @@ print(sol_string)
 
 ioff()
 plt.show()
+plot_solution(best_ACS.candidate, nodes, available_slots)
