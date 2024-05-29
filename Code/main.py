@@ -105,4 +105,7 @@ print(sol_string)
 
 ioff()
 plt.show()
+print("Plotting solution")
 plot_solution(best_ACS.candidate, nodes, available_slots)
+print("Plotting ground truth schedule")
+plot_solution(ground_truth, nodes, available_slots, "Ground Truth Schedule")

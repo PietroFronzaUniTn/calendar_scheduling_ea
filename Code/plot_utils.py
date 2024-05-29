@@ -48,7 +48,7 @@ def plot_observer(population, num_generations, num_evaluations, args):
     plt.draw()
     plt.legend()
 
-def plot_solution(solution, nodes, available_slots):
+def plot_solution(solution, nodes, available_slots, title="Games schedule"):
     days = set()
     for slot in available_slots:
         days.add(slot.date)
@@ -123,7 +123,7 @@ def plot_solution(solution, nodes, available_slots):
     ax.set_ylim(9, 15)
     ax.set_xlabel('Date')
     ax.set_ylabel('Period')
-    ax.set_title('Games schedule')
+    ax.set_title(title)
 
     plt.grid(True)
     plt.show()
