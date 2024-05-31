@@ -112,6 +112,14 @@ class TimeSlot:
             else:
                 return False
 
+def visualize_graph(adjmat, nodes):
+    G = GraphVisualization()
+    for i in range(len(adjmat)):
+        for j in range(len(adjmat[i])):
+            if adjmat[i][j]>0:
+                G.addEdge(nodes[i], nodes[j])
+    G.visualize()
+
 if __name__ == "__main__":
     file_index = 1
 
@@ -129,12 +137,7 @@ if __name__ == "__main__":
         gt_file="./Data/TwoChampionshipOneTeamGT.csv"
 
     nodes, adjmat = getGraphNodesAndAdjacencyMatrix(graph_file)
-    G = GraphVisualization()
-    for i in range(len(adjmat)):
-        for j in range(len(adjmat[i])):
-            if adjmat[i][j]>0:
-                G.addEdge(nodes[i], nodes[j])
-    #G.visualize()
+    visualize_graph(adjmat=adjmat, nodes=nodes)
 
     available_slots = getSlots(slots_file)
     av_slots_str = "["

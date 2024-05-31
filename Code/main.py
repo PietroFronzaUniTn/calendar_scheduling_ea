@@ -1,4 +1,6 @@
 import time
+import os
+import argparse
 from dataInitialization import *
 from calendarColoring import *
 from plot_utils import plot_observer, plot_solution
@@ -9,34 +11,56 @@ import collections
 collections.Iterable = collections.abc.Iterable
 collections.Sequence = collections.abc.Sequence
 
-file_index = 3
+def _is_valid_file(arg):
+    """
+    Checks whether input PDDL files exist and are validate
+    """
 
-if(file_index==0):
-    graph_file="./Data/OneTeamGraph.csv"
-    slots_file="./Data/OneTeamSlots.csv"
-    gt_file="./Data/OneTeamGT.csv"
-elif(file_index==1):
-    graph_file="./Data/OneChampionshipGraph.csv"
-    slots_file="./Data/OneChampionshipSlots.csv"
-    gt_file="./Data/OneChampionshipGT.csv"
-elif(file_index==2):
-    graph_file="./Data/TwoChampionshipOneTeamGraph.csv"
-    slots_file="./Data/TwoChampionshipOneTeamSlots.csv"
-    gt_file="./Data/TwoChampionshipOneTeamGT.csv"
-else:
-    graph_file="./Data/TwoChampionshipGraph.csv"
-    slots_file="./Data/TwoChampionshipSlots.csv"
-    gt_file="./Data/TwoChampionshipGT.csv"
+    if not os.path.exists(arg):
+        raise argparse.ArgumentTypeError('{} not found!'.format(arg))
+    elif not os.path.splitext(arg)[1] == ".csv":
+        raise argparse.ArgumentTypeError('{} is not a valid CSV file!'.format(arg))
+    else:
+        return arg
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Sports Game Scheduling")
+
+    parser.add_argument("--graph_path", help='Path to graph file', type=_is_valid_file, required=True)
+
+    parser.add_argument("--slots_file", help='Path to available slots file', type=_is_valid_file, required=True)
+
+    parser.add_argument("--ground_truth", help='Path to ground truth', type=_is_valid_file, required=True)
+
+    parser.add_argument("--max_generations", type=int, default=50, help="Number of max generations")
+    parser.add_argument("--pop_size", type=int, default=50, help="Population size")
+    parser.add_argument("--learning_rate", type=float, default=0.1, help="Learning rate for ACS")
+    parser.add_argument("--evaporation_rate", type=float, default=0.1, help="Evaporation rate for ACS")
+    parser.add_argument("--random_seed", type=int, default=None, help="Fix random seed")
+    parser.add_argument("--display_graph", action='store_true', help="Display graph representing the calendar")
+    parser.add_argument("--num_championship", type=int,  help="Number of championships present in the graph", required=True)
+    parser.add_argument("--championship_structure", nargs='+', help="Number of games per championship. The number of arguments must be equal to the number of --num_championship argument", required=True)
+
+    args = parser.parse_args()
+    return args
+
+command_args = parse_args()
+graph_file = command_args.graph_path
+slots_file = command_args.slots_file
+gt_file = command_args.ground_truth
 
 # common parameters
-pop_size = 50
-max_generations = 50
-seed = 100
+pop_size = command_args.pop_size
+max_generations = command_args.max_generations
+seed = command_args.random_seed
 prng = Random(seed)
 display = True
 # ACS specific parameters
-evaporation_rate = 0.1
-learning_rate = 0.1
+evaporation_rate = command_args.evaporation_rate
+learning_rate = command_args.learning_rate
+
+num_championship = command_args.num_championship
+championship_structure = [int(i) for i in command_args.championship_structure]
 
 args = {}
 args["fig_title"] = "ACS"
@@ -45,13 +69,10 @@ nodes, adjmat = getGraphNodesAndAdjacencyMatrix(graph_file)
 available_slots = getSlots(slots_file)
 ground_truth = getGroundTruth(gt_file, nodes, available_slots)
 
+
+
 # run ACS
-if file_index == 2:
-    problem = CalendarColoring(adjmat, nodes, available_slots, num_championship=2, champ_size=[14,56])
-elif file_index == 3:
-    problem = CalendarColoring(adjmat, nodes, available_slots, num_championship=2, champ_size=[54,56])
-else:
-    problem = CalendarColoring(adjmat, nodes, available_slots)
+problem = CalendarColoring(adjmat, nodes, available_slots, num_championship, championship_structure)
 ac = inspyred.swarm.ACS(prng, problem.components)
 ac.terminator = ec.terminators.generation_termination
 ac.observer = [plot_observer]
@@ -105,6 +126,9 @@ print(sol_string)
 
 ioff()
 plt.show()
+if(command_args.display_graph):
+    print("Plotting graph representation of the problem")
+    visualize_graph(adjmat=adjmat, nodes=nodes)
 print("Plotting solution")
 plot_solution(best_ACS.candidate, nodes, available_slots)
 print("Plotting ground truth schedule")
